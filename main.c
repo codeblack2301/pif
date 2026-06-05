@@ -10,11 +10,19 @@ typedef struct
 
 int main()
 {
+    int id_;
+    char opcao[1];
+    int numero_contas;
+    printf("-------QUANTAS CONTAS VC DESEJA CADASTRAR--------\n");
+    printf(": ");
+
+    scanf("%d", &numero_contas);
+
     conta_model contas[5];
 
     int cont = 0;
     bool condicao = true;
-    for (int i = 0; i < 5; i++)
+    for (int i = 0; i < numero_contas; i++)
     {
         printf("insira o seu nome: ");
         scanf("%s", &contas[i].nome);
@@ -24,5 +32,18 @@ int main()
         scanf("%d", &contas[i].id);
     }
 
-    return 0;
+    printf("---------VC DESEJA FAZER MAIS ALGUMA OPERAÇÃO?\n");
+    printf("s / n");
+    scanf("%c", &opcao);
+
+    while (opcao == "s")
+    {
+        printf("insira o id da conta: ");
+        scanf("%d", &id_);
+
+        printf("---------VC DESEJA FAZER MAIS ALGUMA OPERAÇÃO?\n");
+        printf("s / n");
+        scanf("%c", &opcao);
+        return 0;
+    }
 }
