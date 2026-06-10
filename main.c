@@ -224,5 +224,7 @@ int main()
 
     fclose(arquivo);
 
+    // fim do codigo
+
     return 0;
 }
