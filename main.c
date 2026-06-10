@@ -1,12 +1,36 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 
-<<<<<<< HEAD
-=======
 typedef struct
 {
     int numeroConta;
     char nome[50];
     float saldo;
 } Cliente;
+
+void limparBuffer()
+{
+    while (getchar() != '\n')
+        ;
+}
+
+int contaExiste(FILE *arquivo, int conta)
+{
+    Cliente cliente;
+
+    rewind(arquivo);
+
+    while (fread(&cliente, sizeof(Cliente), 1, arquivo) == 1)
+    {
+        if (cliente.numeroConta == conta)
+        {
+            return 1;
+        }
+    }
+
+    return 0;
+}
 
 void cadastrarCliente(FILE *arquivo)
 {
@@ -16,10 +40,28 @@ void cadastrarCliente(FILE *arquivo)
     printf("Posicao para cadastrar: ");
     scanf("%d", &posicao);
 
+    if (posicao < 0)
+    {
+        printf("Posicao invalida.\n");
+        return;
+    }
+
     printf("Numero da conta: ");
     scanf("%d", &cliente.numeroConta);
 
-    getchar();
+    if (cliente.numeroConta <= 0)
+    {
+        printf("Numero de conta invalido.\n");
+        return;
+    }
+
+    if (contaExiste(arquivo, cliente.numeroConta))
+    {
+        printf("Ja existe um cliente com essa conta.\n");
+        return;
+    }
+
+    limparBuffer();
 
     printf("Nome: ");
     fgets(cliente.nome, sizeof(cliente.nome), stdin);
@@ -28,8 +70,25 @@ void cadastrarCliente(FILE *arquivo)
     printf("Saldo: ");
     scanf("%f", &cliente.saldo);
 
-    fseek(arquivo, posicao * sizeof(Cliente), SEEK_SET);
-    fwrite(&cliente, sizeof(Cliente), 1, arquivo);
+    if (cliente.saldo < 0)
+    {
+        printf("Saldo nao pode ser negativo.\n");
+        return;
+    }
+
+    if (fseek(arquivo, posicao * sizeof(Cliente), SEEK_SET) != 0)
+    {
+        printf("Erro ao posicionar arquivo.\n");
+        return;
+    }
+
+    if (fwrite(&cliente, sizeof(Cliente), 1, arquivo) != 1)
+    {
+        printf("Erro ao gravar cliente.\n");
+        return;
+    }
+
+    fflush(arquivo);
 
     printf("Cliente cadastrado com sucesso!\n");
 }
@@ -45,13 +104,14 @@ void consultarCliente(FILE *arquivo)
 
     rewind(arquivo);
 
-    while (fread(&cliente, sizeof(Cliente), 1, arquivo))
+    while (fread(&cliente, sizeof(Cliente), 1, arquivo) == 1)
     {
         if (cliente.numeroConta == conta)
         {
             printf("\nConta: %d\n", cliente.numeroConta);
             printf("Nome: %s\n", cliente.nome);
             printf("Saldo: %.2f\n", cliente.saldo);
+
             encontrou = 1;
             break;
         }
@@ -74,7 +134,7 @@ void atualizarSaldo(FILE *arquivo)
 
     rewind(arquivo);
 
-    while (fread(&cliente, sizeof(Cliente), 1, arquivo))
+    while (fread(&cliente, sizeof(Cliente), 1, arquivo) == 1)
     {
         if (cliente.numeroConta == conta)
         {
@@ -83,10 +143,24 @@ void atualizarSaldo(FILE *arquivo)
             printf("Novo saldo: ");
             scanf("%f", &cliente.saldo);
 
-            fseek(arquivo, -sizeof(Cliente), SEEK_CUR);
-            fwrite(&cliente, sizeof(Cliente), 1, arquivo);
+            if (cliente.saldo < 0)
+            {
+                printf("Saldo invalido.\n");
+                return;
+            }
+
+            fseek(arquivo, -(long)sizeof(Cliente), SEEK_CUR);
+
+            if (fwrite(&cliente, sizeof(Cliente), 1, arquivo) != 1)
+            {
+                printf("Erro ao atualizar saldo.\n");
+                return;
+            }
+
+            fflush(arquivo);
 
             printf("Saldo atualizado!\n");
+
             encontrou = 1;
             break;
         }
@@ -109,7 +183,7 @@ void encerrarConta(FILE *arquivo)
 
     rewind(arquivo);
 
-    while (fread(&cliente, sizeof(Cliente), 1, arquivo))
+    while (fread(&cliente, sizeof(Cliente), 1, arquivo) == 1)
     {
         if (cliente.numeroConta == conta)
         {
@@ -117,10 +191,18 @@ void encerrarConta(FILE *arquivo)
             strcpy(cliente.nome, "");
             cliente.saldo = 0;
 
-            fseek(arquivo, -sizeof(Cliente), SEEK_CUR);
-            fwrite(&cliente, sizeof(Cliente), 1, arquivo);
+            fseek(arquivo, -(long)sizeof(Cliente), SEEK_CUR);
+
+            if (fwrite(&cliente, sizeof(Cliente), 1, arquivo) != 1)
+            {
+                printf("Erro ao encerrar conta.\n");
+                return;
+            }
+
+            fflush(arquivo);
 
             printf("Conta encerrada!\n");
+
             encontrou = 1;
             break;
         }
@@ -135,12 +217,13 @@ void encerrarConta(FILE *arquivo)
 void listarClientes(FILE *arquivo)
 {
     Cliente cliente;
+    int encontrou = 0;
 
     rewind(arquivo);
 
     printf("\n===== CLIENTES =====\n");
 
-    while (fread(&cliente, sizeof(Cliente), 1, arquivo))
+    while (fread(&cliente, sizeof(Cliente), 1, arquivo) == 1)
     {
         if (cliente.numeroConta != 0)
         {
@@ -148,13 +231,21 @@ void listarClientes(FILE *arquivo)
             printf("Nome: %s\n", cliente.nome);
             printf("Saldo: %.2f\n", cliente.saldo);
             printf("-------------------\n");
+
+            encontrou = 1;
         }
+    }
+
+    if (!encontrou)
+    {
+        printf("Nenhum cliente cadastrado.\n");
     }
 }
 
 int main()
 {
     FILE *arquivo;
+    int opcao;
 
     arquivo = fopen("clientes.dat", "rb+");
 
@@ -169,8 +260,6 @@ int main()
         }
     }
 
-    int opcao;
-
     do
     {
         printf("\n===== MENU =====\n");
@@ -182,6 +271,7 @@ int main()
         printf("6 - Rewind\n");
         printf("7 - Sair\n");
         printf("Opcao: ");
+
         scanf("%d", &opcao);
 
         switch (opcao)
@@ -223,8 +313,5 @@ int main()
 
     fclose(arquivo);
 
-    // fim do codigo
-
     return 0;
 }
->>>>>>> teste
